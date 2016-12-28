@@ -4,8 +4,10 @@ use std::fmt::{Display, Formatter, Result};
 
 macro_rules! println_err {
     ($($arg:tt)*) => {
-        let res = writeln!(std::io::stderr(), $($arg)*);
-        res.expect("Failed writing to stderr!");
+        {
+            let res = writeln!(std::io::stderr(), $($arg)*);
+            res.expect("Failed writing to stderr!");
+        }
     };
 }
 
