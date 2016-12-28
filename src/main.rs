@@ -4,14 +4,16 @@ extern crate clap;
 extern crate time;
 
 use std::io::Write;
+use std::error::Error;
 use time::Duration;
 
-use clap::{Arg, App};
-use mysql::{Pool, OptsBuilder, Opts, QueryResult};
-use mysql::consts::ColumnType::*;
+use mysql::Opts;
 
+use clap::{Arg, App};
+
+#[macro_use]
 mod util;
-use util::{PrettyPrint, PrettyPrinter};
+use util::PrettyPrinter;
 
 fn main() {
     let args = App::new("DbBench")
@@ -67,12 +69,15 @@ fn main() {
 
     let url_opts = Opts::from_url(url.unwrap()).unwrap();
     let pool = mysql::Pool::new(url_opts).map_err(|e| {
-        writeln!(std::io::stderr(), "Error while trying to connect to database: {}", e);
+        println_err!("Error while trying to connect to database: {}", e.description());
         std::process::exit(1);
     }).unwrap();
 
     let duration = Duration::span(|| {
-        pool.prep_exec(query.unwrap(), ());
+        pool.prep_exec(query.unwrap(), ()).map_err(|e| {
+            println_err!("Error while executing query: {}", e.description());
+            std::process::exit(1);
+        }).unwrap();
     });
 
     println!("Query took: {}", PrettyPrinter::from(duration));
