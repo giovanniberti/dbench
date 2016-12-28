@@ -7,7 +7,7 @@ use std::io::Write;
 use std::error::Error;
 use time::Duration;
 
-use mysql::Opts;
+use mysql::{Opts, OptsBuilder};
 
 use clap::{Arg, App};
 
@@ -22,8 +22,12 @@ fn main() {
         .about("A database query benchmark program")
         .arg(Arg::with_name("url")
             .value_name("URL")
-            .help("The connection url to the db")
-            .required(true))
+            .help("The connection url to the db"))
+        .arg(Arg::with_name("host")
+            .short("H")
+            .long("host")
+            .value_name("HOST")
+            .help("The host where the database resides"))
         .arg(Arg::with_name("query")
             .short("q")
             .long("query")
@@ -51,27 +55,49 @@ fn main() {
             .takes_value(true))
         .get_matches();
 
+    let builder = {
+        let mut tmp = OptsBuilder::new();
 
-    let url = args.value_of("url");
-    let username = args.value_of("username");
-    let password = args.value_of("password");
-    let query = args.value_of("query");
-    let db = args.value_of("database");
+        if args.is_present("url") {
+            let url = args.value_of("url");
+            let url_opts = expect!(Opts::from_url(url.unwrap()), "Failed to parse provided URL! {}");
 
-    // MYSQL CONNECT //
-    /*
-    let opts = OptsBuilder::new()
-        .ip_or_hostname(url)
-        .user(username)
-        .pass(password)
-        .db_name(db);
-     */
+            tmp = OptsBuilder::from_opts(url_opts);
 
-    let url_opts = Opts::from_url(url.unwrap()).unwrap();
-    let pool = mysql::Pool::new(url_opts).map_err(|e| {
+            // No need to fetch port, username, db
+        } else {
+            let db = args.value_of("database");
+            let username = args.value_of("username");
+            let host = args.value_of("host");
+
+            // db, username and host must ALL be present
+            match (db, username, host) {
+                (Some(_), Some(_), Some(_)) => (),
+                _ => {
+                    println_err!("Missing parameters: ensure that parametrized URL or db, username and host are present.");
+                    std::process::exit(1);
+                }
+            }
+
+            tmp
+                .db_name(db)
+                .user(username)
+                .ip_or_hostname(host);
+        }
+
+        args.value_of("password").map(|p| tmp.pass(Some(p)));
+
+        tmp
+    };
+
+    let opts = Opts::from(builder);
+
+    let pool = mysql::Pool::new(opts).map_err(|e| {
         println_err!("Error while trying to connect to database: {}", e.description());
         std::process::exit(1);
     }).unwrap();
+
+    let query = args.value_of("query");
 
     let duration = Duration::span(|| {
         pool.prep_exec(query.unwrap(), ()).map_err(|e| {
