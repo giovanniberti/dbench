@@ -34,7 +34,6 @@ fn main() {
             .long("query")
             .value_name("QUERY")
             .help("The query to be executed by the database")
-            .takes_value(true)
             .required(true))
         .arg(Arg::with_name("database")
             .short("d")
@@ -46,12 +45,15 @@ fn main() {
             .short("u")
             .long("user")
             .value_name("USER")
-            .help("The username used for authenticating with the database")
-            .takes_value(true))
+            .help("The username used for authenticating with the database"))
         .arg(Arg::with_name("password")
             .short("p")
             .long("password")
             .help("Flag to indicate whether to use a password or not (asked interactively)"))
+        .arg(Arg::with_name("requests")
+            .short("n")
+            .value_name("NUMBER")
+            .help("The number of query requests to send to the database"))
         .get_matches();
 
     let builder = {
@@ -96,9 +98,15 @@ fn main() {
     let pool = expect!(mysql::Pool::new(opts), "Error while trying to connect to database: {}");
     let query = args.value_of("query");
 
-    let duration = Duration::span(|| {
-        expect!(pool.prep_exec(query.unwrap(), ()), "Error while executing query: {}");
-    });
+    let times = args.value_of("requests").map(str::parse::<u64>).and_then(|r| {
+        r.map_err(|_| println_err!("Invalid argument passed to `-n` flag. Defaulting to 1")).ok()
+    }).unwrap_or(1);
 
-    println!("Query took: {}", PrettyPrinter::from(duration));
+    for _ in 0..times {
+        let duration = Duration::span(|| {
+            expect!(pool.prep_exec(query.unwrap(), ()), "Error while executing query: {}");
+        });
+
+        println!("Query took: {}", PrettyPrinter::from(duration));
+    }
 }
