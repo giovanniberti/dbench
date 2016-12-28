@@ -12,12 +12,10 @@ macro_rules! println_err {
 macro_rules! expect {
     ($r:expr, $msg:tt) => {
         {
-            let _ = $r.map_err(|e|{
+            $r.map_err(|e|{
                 println_err!($msg, e.description());
                 std::process::exit(1);
-            });
-
-            $r.unwrap()
+            }).unwrap()
         }
     };
 }

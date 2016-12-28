@@ -85,9 +85,7 @@ fn main() {
         }
 
         if args.is_present("password") {
-
             let pass = rpassword::prompt_password_stdout("Password: ").ok();
-
             tmp.pass(pass);
         }
 
@@ -95,19 +93,11 @@ fn main() {
     };
 
     let opts = Opts::from(builder);
-
-    let pool = mysql::Pool::new(opts).map_err(|e| {
-        println_err!("Error while trying to connect to database: {}", e.description());
-        std::process::exit(1);
-    }).unwrap();
-
+    let pool = expect!(mysql::Pool::new(opts), "Error while trying to connect to database: {}");
     let query = args.value_of("query");
 
     let duration = Duration::span(|| {
-        pool.prep_exec(query.unwrap(), ()).map_err(|e| {
-            println_err!("Error while executing query: {}", e.description());
-            std::process::exit(1);
-        }).unwrap();
+        expect!(pool.prep_exec(query.unwrap(), ()), "Error while executing query: {}");
     });
 
     println!("Query took: {}", PrettyPrinter::from(duration));
