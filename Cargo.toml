@@ -1,0 +1,9 @@
+[package]
+name = "DbBench"
+version = "0.1.0"
+authors = ["Giovanni Berti <dev.giovanniberti@gmail.com>"]
+
+[dependencies]
+mysql = "8.0.0"
+clap = "2.19.2"
+time = "0.1"
