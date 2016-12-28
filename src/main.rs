@@ -2,6 +2,7 @@
 extern crate mysql;
 extern crate clap;
 extern crate time;
+extern crate rpassword;
 
 use std::io::Write;
 use std::error::Error;
@@ -50,9 +51,7 @@ fn main() {
         .arg(Arg::with_name("password")
             .short("p")
             .long("password")
-            .value_name("PASSWORD")
-            .help("The password used for authenticating with the database")
-            .takes_value(true))
+            .help("Flag to indicate whether to use a password or not (asked interactively)"))
         .get_matches();
 
     let builder = {
@@ -85,7 +84,12 @@ fn main() {
                 .ip_or_hostname(host);
         }
 
-        args.value_of("password").map(|p| tmp.pass(Some(p)));
+        if args.is_present("password") {
+
+            let pass = rpassword::prompt_password_stdout("Password: ").ok();
+
+            tmp.pass(pass);
+        }
 
         tmp
     };

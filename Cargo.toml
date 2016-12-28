@@ -7,3 +7,4 @@ authors = ["Giovanni Berti <dev.giovanniberti@gmail.com>"]
 mysql = "8.0.0"
 clap = "2.19.2"
 time = "0.1"
+rpassword = "0.3"
