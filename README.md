@@ -12,7 +12,7 @@ It currently supports MySQL only. See [Planned features](#planned-features) for 
 
 ## Install
 1. Install cargo for your OS/distribution (https://crates.io/install)
-2. Run `cargo install giovanniberti/dbench`
+2. Run `cargo install dbench`
 
 ## Usage
 * Run a query 
