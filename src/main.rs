@@ -57,6 +57,9 @@ fn main() {
             .short("n")
             .value_name("NUMBER")
             .help("The number of query requests to send to the database"))
+        .arg(Arg::with_name("verbosity")
+            .short("v")
+            .help("Verbosity level"))
         .get_matches();
 
     let builder = {
@@ -100,6 +103,7 @@ fn main() {
     let opts = Opts::from(builder);
     let pool = expect!(mysql::Pool::new(opts), "Error while trying to connect to database: {}");
     let query = args.value_of("query");
+    let verbosity = args.occurrences_of("verbosity");
 
     let times = args.value_of("requests").map(str::parse::<usize>).and_then(|r| {
         r.map_err(|_| println_err!("Invalid argument passed to `-n` flag. Defaulting to 1")).ok()
@@ -111,7 +115,9 @@ fn main() {
             expect!(pool.prep_exec(query.unwrap(), ()), "Error while executing query: {}");
         });
 
-        println!("Query took: {}", PrettyPrinter::from(duration));
+        if verbosity > 0 {
+            println!("Query took: {}", PrettyPrinter::from(duration));
+        }
         durations.push(duration);
     }
 

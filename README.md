@@ -39,13 +39,14 @@ $ dbench --help
 ## Recognized options and flags
 | Short version | Long version | Accepts parameter |                                Description                              |
 |:-------------:|:------------:|:-----------------:|:------------------------------------------------------------------------|
-|-d             | --database   | yes               | Database name to which the query is sent                                |
-|-H             | --host       | yes               | The host where the database resides                                     |
-|-q             | --query      | yes               | The query to be executed by the database                                |
-|-u             | --user       | yes               | The username used for authenticating with the database                  |
-|-p             | --password   | no                | Flag to indicate whether to use a password or not (asked interactively) |
+| -d            | --database   | yes               | Database name to which the query is sent                                |
+| -H            | --host       | yes               | The host where the database resides                                     |
+| -q            | --query      | yes               | The query to be executed by the database                                |
+| -u            | --user       | yes               | The username used for authenticating with the database                  |
+| -p            | --password   | no                | Flag to indicate whether to use a password or not (asked interactively) |
 | -V            | --version    | no                | Prints version information                                              |
 | -h            | --help       | no                | Prints help information                                                 |
+| -v            | N/A          | no                | Raises verbosity level                                                  |
 
 ## Planned features
 - PostgreSQL support
