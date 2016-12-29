@@ -58,8 +58,8 @@ $ dbench --help
 - Concurrent requests support
 
 ## Contribute
-See [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md)
+See [CONTRIBUTING.md](../master/CONTRIBUTING.md)
 
 ## License
      
-[MIT License (c) Giovanni Berti](../blob/master/LICENSE)
+[MIT License (c) Giovanni Berti](../master/LICENSE)
