@@ -3,12 +3,15 @@ extern crate mysql;
 extern crate clap;
 extern crate time;
 extern crate rpassword;
+extern crate num;
 
 use std::io::Write;
 use std::error::Error;
 use time::Duration;
 
 use mysql::{Opts, OptsBuilder};
+
+use num::cast::ToPrimitive;
 
 use clap::{Arg, App};
 
@@ -98,15 +101,20 @@ fn main() {
     let pool = expect!(mysql::Pool::new(opts), "Error while trying to connect to database: {}");
     let query = args.value_of("query");
 
-    let times = args.value_of("requests").map(str::parse::<u64>).and_then(|r| {
+    let times = args.value_of("requests").map(str::parse::<usize>).and_then(|r| {
         r.map_err(|_| println_err!("Invalid argument passed to `-n` flag. Defaulting to 1")).ok()
     }).unwrap_or(1);
 
+    let mut durations = Vec::with_capacity(times);
     for _ in 0..times {
         let duration = Duration::span(|| {
             expect!(pool.prep_exec(query.unwrap(), ()), "Error while executing query: {}");
         });
 
         println!("Query took: {}", PrettyPrinter::from(duration));
+        durations.push(duration);
     }
+
+    let sum = durations.iter().fold(Duration::zero(), |d, &c| d + c);
+    println!("Latency per request (mean): {}", PrettyPrinter::from(sum / times.to_i32().unwrap()));
 }
