@@ -1,7 +1,11 @@
 [package]
-name = "DbBench"
+name = "dbench"
 version = "0.1.0"
+description = "A simple database query benchmarker"
 authors = ["Giovanni Berti <dev.giovanniberti@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/giovanniberti/dbench"
+keywords = ["db", "database", "bench", "benchmark", "query", "mysql", "postgres"]
 
 [dependencies]
 mysql = "8.0.0"
