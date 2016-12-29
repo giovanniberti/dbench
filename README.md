@@ -4,14 +4,13 @@ It currently supports MySQL only. See [Planned features](#planned-features) for 
 
 ## Table of contents
  - [Install](#install)
-     - [Usage](#usage)
-     - [Recognized options and flags](#recognized-options-and-flags)
-     - [Planned features](#planned-features)
-     - [Contribute](#contribute)
-     - [License](#license)
+ - [Usage](#usage)
+ - [Recognized options and flags](#recognized-options-and-flags)
+ - [Planned features](#planned-features)
+ - [Contribute](#contribute)
+ - [License](#license)
 
 ## Install
-
     1. Install cargo for your OS/distribution (https://crates.io/install)
     2. Run `cargo install giovanniberti/dbench`
 
