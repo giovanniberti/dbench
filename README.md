@@ -49,12 +49,12 @@ $ dbench --help
 | -v            | N/A          | no                | Raises verbosity level                                                  |
 
 ## Planned features
-- PostgreSQL support
+- ~~PostgreSQL support~~ (Done!)
 - Other DBs support (Mongo?)
 - More measurements, such as:
   - Req/s (mean)
-  - Time per request (mean)
-  - Total time
+  - ~~Time per request (mean)~~ (Done!)
+  - ~~Total time~~ (Done!)
   - Percentage with time (as `ab`)
 - Concurrent requests support
 
