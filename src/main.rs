@@ -1,23 +1,24 @@
 #[macro_use]
 extern crate mysql;
+extern crate postgres;
 extern crate clap;
 extern crate time;
 extern crate rpassword;
 extern crate num;
 
+#[macro_use]
+mod util;
+mod db;
+
+use std::borrow::Cow;
 use std::io::Write;
 use std::error::Error;
 use time::Duration;
-
-use mysql::{Opts, OptsBuilder};
-
 use num::cast::ToPrimitive;
-
 use clap::{Arg, App};
-
-#[macro_use]
-mod util;
 use util::PrettyPrinter;
+use db::connection::{Connection, ConnectionData, ConnectionParams};
+use db::database::{Backend, Database};
 
 fn main() {
     let args = App::new("DbBench")
@@ -26,29 +27,39 @@ fn main() {
         .about("A database query benchmark program")
         .arg(Arg::with_name("url")
             .value_name("URL")
-            .help("The connection url to the db"))
-        .arg(Arg::with_name("host")
-            .short("H")
-            .long("host")
-            .value_name("HOST")
-            .help("The host where the database resides"))
+            .help("The connection url to the db. If you specify the URL, you must not pass host, backend, username and password arguments.")
+            .conflicts_with("manual"))
         .arg(Arg::with_name("query")
             .short("q")
             .long("query")
             .value_name("QUERY")
             .help("The query to be executed by the database")
             .required(true))
+        .arg(Arg::with_name("host")
+            .short("H")
+            .long("host")
+            .value_name("HOST")
+            .help("The host where the database resides")
+            .group("manual"))
         .arg(Arg::with_name("database")
             .short("d")
             .long("database")
             .value_name("DATABASE")
             .help("The database name")
-            .takes_value(true))
+            .group("manual"))
         .arg(Arg::with_name("username")
             .short("u")
             .long("user")
             .value_name("USER")
-            .help("The username used for authenticating with the database"))
+            .help("The username used for authenticating with the database")
+            .group("manual"))
+        .arg(Arg::with_name("backend")
+            .short("b")
+            .long("backend")
+            .value_name("BACKEND")
+            .help("The database backend used")
+            .possible_values(&["mysql", "postgres"])
+            .group("manual"))
         .arg(Arg::with_name("password")
             .short("p")
             .long("password")
@@ -62,46 +73,56 @@ fn main() {
             .help("Verbosity level"))
         .get_matches();
 
-    let builder = {
-        let mut tmp = OptsBuilder::new();
+    let chan = {
+        let chan_inner = {
+            if args.is_present("url") {
+                let url = args.value_of("url").unwrap();
+                Connection::connect(url)
+            } else {
+                let backend = args.value_of("backend");
+                let db = args.value_of("database");
+                let username = args.value_of("username");
+                let host = args.value_of("host");
+                let port = args.value_of("port");
+                let password = args.value_of("password");
 
-        if args.is_present("url") {
-            let url = args.value_of("url");
-            let url_opts = expect!(Opts::from_url(url.unwrap()), "Failed to parse provided URL! {}");
+                // db, username, host and backend must ALL be present
+                match (db, username, host, backend) {
+                    (Some(db), Some(username), Some(host), Some(backend_str)) => {
+                        let database = match backend_str {
+                            "mysql" => Database::MySQL,
+                            "postgres" => Database::Postgres,
+                            _ => unreachable!()
+                        };
 
-            tmp = OptsBuilder::from_opts(url_opts);
-
-            // No need to fetch port, username, db
-        } else {
-            let db = args.value_of("database");
-            let username = args.value_of("username");
-            let host = args.value_of("host");
-
-            // db, username and host must ALL be present
-            match (db, username, host) {
-                (Some(_), Some(_), Some(_)) => (),
-                _ => {
-                    println_err!("Missing parameters: ensure that parametrized URL or db, username and host are present.");
-                    std::process::exit(1);
+                        Connection::connect(ConnectionParams {
+                            data: ConnectionData {
+                                host: Cow::from(host),
+                                port: port.and_then(|s| str::parse::<usize>(s).ok()).unwrap_or(database.default_port()),
+                                database: Cow::from(db),
+                                username: Cow::from(username),
+                                password: password.map(Cow::from)
+                            },
+                            backend: database
+                        })
+                    },
+                    _ => {
+                        println_err!("Missing parameters: ensure that parametrized URL or db, username, host and backend are present.");
+                        std::process::exit(1);
+                    }
                 }
             }
+        };
 
-            tmp
-                .db_name(db)
-                .user(username)
-                .ip_or_hostname(host);
+        match chan_inner {
+            Ok(c) => c,
+            Err(e) => {
+                println_err!("Error while trying to create connection to db! {}", e.description());
+                std::process::exit(1);
+            }
         }
-
-        if args.is_present("password") {
-            let pass = rpassword::prompt_password_stdout("Password: ").ok();
-            tmp.pass(pass);
-        }
-
-        tmp
     };
 
-    let opts = Opts::from(builder);
-    let pool = expect!(mysql::Pool::new(opts), "Error while trying to connect to database: {}");
     let query = args.value_of("query");
     let verbosity = args.occurrences_of("verbosity");
 
@@ -112,7 +133,10 @@ fn main() {
     let mut durations = Vec::with_capacity(times);
     for _ in 0..times {
         let duration = Duration::span(|| {
-            expect!(pool.prep_exec(query.unwrap(), ()), "Error while executing query: {}");
+            match chan.query(query.unwrap()) {
+                Ok(_)  => (),
+                Err(cause) => println!("Error: {}", cause)
+            }
         });
 
         if verbosity > 0 {
@@ -122,5 +146,8 @@ fn main() {
     }
 
     let sum = durations.iter().fold(Duration::zero(), |d, &c| d + c);
+    println!("Number of requests: {}", times);
     println!("Latency per request (mean): {}", PrettyPrinter::from(sum / times.to_i32().unwrap()));
+    println!("Req/ms: {}", times.to_f64().unwrap() / (if sum.num_milliseconds() as f64 <= 0.0 { 1.0 } else { sum.num_milliseconds() as f64 })); // FIXME: wrong value
+    println!("Total time: {}", PrettyPrinter::from(sum));
 }
