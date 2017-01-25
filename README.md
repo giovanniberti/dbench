@@ -1,6 +1,6 @@
 # dbench
 dbench is a simple database query benchmarker written in Rust.
-It currently supports MySQL only. See [Planned features](#planned-features) for more info.
+It currently supports MySQL and Postgres. See [Planned features](#planned-features) for more info.
 
 ## Table of contents
  - [Install](#install)
