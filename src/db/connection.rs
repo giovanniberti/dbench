@@ -54,6 +54,55 @@ impl<'c> IntoConnectionParams<'c> for ConnectionParams<'c, Database> {
     }
 }
 
+impl<'a> IntoConnectionParams<'a> for &'a str {
+    fn into(self) -> Result<ConnectionParams<'a, Database>, ParamsError> {
+        let backend: Option<Database> = {
+            if self.contains("mysql") {
+                Some(Database::MySQL)
+            } else if self.contains("postgres") {
+                Some(Database::Postgres)
+            } else {
+                None
+            }
+        };
+
+        let regex = RegexBuilder::new(".*://(?P<user>.*)(:(?P<password>.*))?@(?P<host>.*)(:(?P<port>.*))?/(?P<db>.*)$")
+            .swap_greed(true) // make regex non greedy
+            .compile()
+            .ok()
+            .unwrap(); // TODO: use lazy_static!
+        let captures = regex.captures(self);
+
+        let params = match (captures, backend) {
+            (Some(captures), Some(backend)) => {
+                let user = captures.name("user").map(Cow::from).unwrap();
+                let password = captures.name("password").map(Cow::from);
+                let host = captures.name("host").map(Cow::from).unwrap();
+                let port: usize = captures.name("port").map(str::parse::<usize>).and_then(Result::ok).unwrap_or(backend.default_port());
+                let db = captures.name("db").map(Cow::from).unwrap();
+
+                Ok(ConnectionParams {
+                    data: ConnectionData {
+                        host: host,
+                        port: port,
+                        database: db,
+                        username: user,
+                        password: password,
+                    },
+
+                    backend: backend
+                })
+            },
+
+            (Some(_), None) => Err(ParamsError::UnsupportedBackendError),
+            (None, _) => Err(ParamsError::MalformedURLError)
+
+        };
+
+        params
+    }
+}
+
 pub struct Connection {}
 
 #[derive(Debug)]
@@ -83,3 +132,4 @@ impl Error for ConnectionError {
         }
     }
 }
+
