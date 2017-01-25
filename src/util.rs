@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter, Result};
 macro_rules! println_err {
     ($($arg:tt)*) => {
         {
-            let res = writeln!(std::io::stderr(), $($arg)*);
+            let res = writeln!(::std::io::stderr(), $($arg)*);
             res.expect("Failed writing to stderr!");
         }
     };
@@ -16,7 +16,7 @@ macro_rules! expect {
         {
             $r.map_err(|e|{
                 println_err!($msg, e.description());
-                std::process::exit(1);
+                ::std::process::exit(1);
             }).unwrap()
         }
     };
@@ -28,7 +28,7 @@ pub trait PrettyPrint {
 
 impl PrettyPrint for Duration {
     fn pretty_print<W: Write>(&self, f: &mut W) -> Result {
-        const NANOS_PER_MS: i64 = 1_000_000; // / any way to refer directly to time::NANOS_PER_MS?
+        const NANOS_PER_MS: i64 = 1_000_000;
 
         let nanos = self.num_nanoseconds().unwrap(); // TODO: Better error handling
         write!(f, "{} ms", (nanos as f64) / (NANOS_PER_MS as f64))
