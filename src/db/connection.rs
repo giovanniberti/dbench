@@ -133,3 +133,24 @@ impl Error for ConnectionError {
     }
 }
 
+impl<'p> Connection {
+    pub fn connect<P: IntoConnectionParams<'p>>(conn_params: P) -> Result<Box<DbChannel>, ConnectionError> {
+        match conn_params.into() {
+            Ok(params) => {
+
+                let backend = params.backend;
+                let channel = backend.connect(params.data);
+
+                match channel {
+                    Ok(chan) => {
+                        Ok(chan)
+                    },
+
+                    Err(e) => Err(ConnectionError::BackendError(e))
+                }
+            },
+
+            Err(e) => Err(ConnectionError::ParamsError(e))
+        }
+    }
+}
