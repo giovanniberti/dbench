@@ -8,6 +8,8 @@ extern crate time;
 extern crate rpassword;
 extern crate num;
 extern crate rayon;
+extern crate r2d2;
+extern crate r2d2_postgres;
 
 #[macro_use]
 mod util;
@@ -16,7 +18,6 @@ mod db;
 use std::borrow::Cow;
 use std::io::Write;
 use std::error::Error;
-use std::sync::{Arc, Mutex};
 use time::Duration;
 use num::cast::ToPrimitive;
 use clap::{Arg, App};
@@ -85,7 +86,7 @@ fn main() {
             .help("Verbosity level"))
         .get_matches();
 
-    let chan_raw = {
+    let chan = {
         let chan_inner = {
             if args.is_present("url") {
                 let url = args.value_of("url").unwrap();
@@ -161,8 +162,6 @@ fn main() {
     let mut durations = Vec::with_capacity(times);
 
     if jobs > 1 {
-        let chan = Arc::new(Mutex::new(chan_raw));
-
         let config = Configuration::new().set_num_threads(jobs);
 
         match rayon::initialize(config) {
@@ -171,11 +170,9 @@ fn main() {
         }
 
         (0..times).into_par_iter().map(|_| {
-            let chan = chan.lock().unwrap();
-            measure(&*chan)
+            measure(&chan)
         }).collect_into(&mut durations);
     } else {
-        let chan = chan_raw;
         for _ in 0..times {
             durations.push(measure(&chan));
         }

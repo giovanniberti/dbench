@@ -5,8 +5,9 @@ use super::database::{BackendError};
 use super::connection::ConnectionData;
 use super::channel::{DbChannel};
 
-use postgres::{Connection, TlsMode};
 use postgres::params::{ConnectParams, ConnectTarget, UserInfo};
+use r2d2::{Config, Pool};
+use r2d2_postgres::{TlsMode, PostgresConnectionManager};
 
 pub fn default_port() -> usize {
     5432
@@ -24,8 +25,12 @@ pub fn connect(params: ConnectionData) -> Result<Box<DbChannel>, BackendError> {
         options: vec![]
     };
 
-    match Connection::connect(conn_params, TlsMode::None) {
-        Ok(conn) => Ok(Box::new(conn) as Box<DbChannel>),
+    let config = Config::default();
+    let manager = PostgresConnectionManager::new(conn_params, TlsMode::None).unwrap();
+    let pool = Pool::new(config, manager);
+
+    match pool {
+        Ok(pool) => Ok(Box::new(pool) as Box<DbChannel>),
         Err(e) => {
             println!("Unable to connect to PostgreSQL backend.");
             Err(BackendError::IoError(Box::new(e) as Box<Error>))

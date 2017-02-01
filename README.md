@@ -57,13 +57,7 @@ $ dbench --help
   - ~~Time per request (mean)~~ (Done!)
   - ~~Total time~~ (Done!)
   - Percentage with time (as `ab`)
-- ~~Concurrent requests support~~ (Partial, see below)
-
-## Concurrent requests support
-Because not all types which implement `DbChannel` are safe to share between different threads
-(notably, `postgres::Connection` is not `Sync`), a locking mechanism must be used in order to fire
-multiple requests from different threads from the same connection. Thus, concurrency is somewhat limited,
-because no thread can fire a request while another is using the connection.
+- ~~Concurrent requests support~~ (Done!)
 
 ## Contribute
 See [CONTRIBUTING.md](../master/CONTRIBUTING.md)
