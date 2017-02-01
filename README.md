@@ -52,7 +52,7 @@ $ dbench --help
 - ~~PostgreSQL support~~ (Done!)
 - Other DBs support (Mongo?)
 - More measurements, such as:
-  - Req/s (mean)
+  - ~~Req/s (mean)~~ (Done!)
   - ~~Time per request (mean)~~ (Done!)
   - ~~Total time~~ (Done!)
   - Percentage with time (as `ab`)
