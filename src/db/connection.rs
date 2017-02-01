@@ -6,7 +6,16 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use db::database::{Backend, BackendError, Database};
 use db::channel::DbChannel;
-use self::regex::RegexBuilder;
+use self::regex::{Regex, RegexBuilder};
+
+lazy_static! {
+    static ref REGEX: Regex =
+        RegexBuilder::new(".*://(?P<user>.*)(:(?P<password>.*))?@(?P<host>.*)(:(?P<port>.*))?/(?P<db>.*)$")
+            .swap_greed(true) // make regex non greedy
+            .compile()
+            .ok()
+            .unwrap();
+}
 
 #[derive(Debug)]
 pub struct ConnectionParams<'c, B> where B: Backend {
@@ -66,12 +75,7 @@ impl<'a> IntoConnectionParams<'a> for &'a str {
             }
         };
 
-        let regex = RegexBuilder::new(".*://(?P<user>.*)(:(?P<password>.*))?@(?P<host>.*)(:(?P<port>.*))?/(?P<db>.*)$")
-            .swap_greed(true) // make regex non greedy
-            .compile()
-            .ok()
-            .unwrap(); // TODO: use lazy_static!
-        let captures = regex.captures(self);
+        let captures = REGEX.captures(self);
 
         let params = match (captures, backend) {
             (Some(captures), Some(backend)) => {
