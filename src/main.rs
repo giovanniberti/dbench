@@ -1,10 +1,13 @@
 #[macro_use]
 extern crate mysql;
+#[macro_use]
+extern crate lazy_static;
 extern crate postgres;
 extern crate clap;
 extern crate time;
 extern crate rpassword;
 extern crate num;
+
 
 #[macro_use]
 mod util;
@@ -148,6 +151,6 @@ fn main() {
     let sum = durations.iter().fold(Duration::zero(), |d, &c| d + c);
     println!("Number of requests: {}", times);
     println!("Latency per request (mean): {}", PrettyPrinter::from(sum / times.to_i32().unwrap()));
-    println!("Req/ms: {}", times.to_f64().unwrap() / (if sum.num_milliseconds() as f64 <= 0.0 { 1.0 } else { sum.num_milliseconds() as f64 })); // FIXME: wrong value
+    println!("Req/ms: {0:.3}", times.to_f64().unwrap() / util::to_ms_precise(&sum));
     println!("Total time: {}", PrettyPrinter::from(sum));
 }

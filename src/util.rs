@@ -22,16 +22,21 @@ macro_rules! expect {
     };
 }
 
+pub fn to_ms_precise(d: &Duration) -> f64 {
+    const NANOS_PER_MS: i64 = 1_000_000;
+
+    let nanos = d.num_nanoseconds().unwrap(); // TODO: Better error handling
+    (nanos as f64) / (NANOS_PER_MS as f64)
+}
+
 pub trait PrettyPrint {
     fn pretty_print<W: Write>(&self, &mut W) -> Result;
 }
 
 impl PrettyPrint for Duration {
     fn pretty_print<W: Write>(&self, f: &mut W) -> Result {
-        const NANOS_PER_MS: i64 = 1_000_000;
 
-        let nanos = self.num_nanoseconds().unwrap(); // TODO: Better error handling
-        write!(f, "{} ms", (nanos as f64) / (NANOS_PER_MS as f64))
+        write!(f, "{} ms", to_ms_precise(&self))
     }
 }
 
