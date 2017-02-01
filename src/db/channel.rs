@@ -2,7 +2,7 @@ use std::error::Error;
 use mysql::Pool;
 use postgres::Connection;
 
-pub trait DbChannel {
+pub trait DbChannel: Send {
     fn query(&self, &str) -> Result<(), String>;
 }
 

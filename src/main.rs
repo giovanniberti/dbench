@@ -7,7 +7,7 @@ extern crate clap;
 extern crate time;
 extern crate rpassword;
 extern crate num;
-
+extern crate rayon;
 
 #[macro_use]
 mod util;
@@ -16,12 +16,16 @@ mod db;
 use std::borrow::Cow;
 use std::io::Write;
 use std::error::Error;
+use std::sync::{Arc, Mutex};
 use time::Duration;
 use num::cast::ToPrimitive;
 use clap::{Arg, App};
 use util::PrettyPrinter;
 use db::connection::{Connection, ConnectionData, ConnectionParams};
 use db::database::{Backend, Database};
+use db::channel::DbChannel;
+use rayon::prelude::*;
+use rayon::Configuration;
 
 fn main() {
     let args = App::new("DbBench")
@@ -71,12 +75,17 @@ fn main() {
             .short("n")
             .value_name("NUMBER")
             .help("The number of query requests to send to the database"))
+        .arg(Arg::with_name("jobs")
+            .short("j")
+            .long("jobs")
+            .value_name("JOBS")
+            .help("The number of concurrent jobs that will query the database"))
         .arg(Arg::with_name("verbosity")
             .short("v")
             .help("Verbosity level"))
         .get_matches();
 
-    let chan = {
+    let chan_raw = {
         let chan_inner = {
             if args.is_present("url") {
                 let url = args.value_of("url").unwrap();
@@ -126,6 +135,7 @@ fn main() {
         }
     };
 
+    let jobs = args.value_of("jobs").map(str::parse::<usize>).and_then(Result::ok).unwrap_or(1);
     let query = args.value_of("query");
     let verbosity = args.occurrences_of("verbosity");
 
@@ -133,8 +143,7 @@ fn main() {
         r.map_err(|_| println_err!("Invalid argument passed to `-n` flag. Defaulting to 1")).ok()
     }).unwrap_or(1);
 
-    let mut durations = Vec::with_capacity(times);
-    for _ in 0..times {
+    let measure = |chan: &Box<DbChannel>| {
         let duration = Duration::span(|| {
             match chan.query(query.unwrap()) {
                 Ok(_)  => (),
@@ -145,7 +154,31 @@ fn main() {
         if verbosity > 0 {
             println!("Query took: {}", PrettyPrinter::from(duration));
         }
-        durations.push(duration);
+
+        duration
+    };
+
+    let mut durations = Vec::with_capacity(times);
+
+    if jobs > 1 {
+        let chan = Arc::new(Mutex::new(chan_raw));
+
+        let config = Configuration::new().set_num_threads(jobs);
+
+        match rayon::initialize(config) {
+            Ok(()) => (),
+            Err(e) => println!("Error while initializing rayon: {}", e)
+        }
+
+        (0..times).into_par_iter().map(|_| {
+            let chan = chan.lock().unwrap();
+            measure(&*chan)
+        }).collect_into(&mut durations);
+    } else {
+        let chan = chan_raw;
+        for _ in 0..times {
+            durations.push(measure(&chan));
+        }
     }
 
     let sum = durations.iter().fold(Duration::zero(), |d, &c| d + c);

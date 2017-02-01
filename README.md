@@ -42,6 +42,7 @@ $ dbench --help
 | -d            | --database   | yes               | Database name to which the query is sent                                |
 | -H            | --host       | yes               | The host where the database resides                                     |
 | -q            | --query      | yes               | The query to be executed by the database                                |
+| -j            | --jobs       | yes               | Number of concurrent jobs                                               |
 | -u            | --user       | yes               | The username used for authenticating with the database                  |
 | -p            | --password   | no                | Flag to indicate whether to use a password or not (asked interactively) |
 | -V            | --version    | no                | Prints version information                                              |
@@ -56,7 +57,13 @@ $ dbench --help
   - ~~Time per request (mean)~~ (Done!)
   - ~~Total time~~ (Done!)
   - Percentage with time (as `ab`)
-- Concurrent requests support
+- ~~Concurrent requests support~~ (Partial, see below)
+
+## Concurrent requests support
+Because not all types which implement `DbChannel` are safe to share between different threads
+(notably, `postgres::Connection` is not `Sync`), a locking mechanism must be used in order to fire
+multiple requests from different threads from the same connection. Thus, concurrency is somewhat limited,
+because no thread can fire a request while another is using the connection.
 
 ## Contribute
 See [CONTRIBUTING.md](../master/CONTRIBUTING.md)
