@@ -183,4 +183,27 @@ fn main() {
     println!("Latency per request (mean): {}", PrettyPrinter::from(sum / times.to_i32().unwrap()));
     println!("Req/ms: {0:.3}", times.to_f64().unwrap() / util::to_ms_precise(&sum));
     println!("Total time: {}", PrettyPrinter::from(sum));
+
+    durations.sort();
+    let pretty = durations.into_iter().map(PrettyPrinter::from).collect::<Vec<_>>();
+    let len = pretty.len();
+    println!("Percentage of queries computed within a certain time:");
+    println!("{:>5}\t{:>6}\n\
+              {:>5}\t{:>6}\n\
+              {:>5}\t{:>6}\n\
+              {:>5}\t{:>6}\n\
+              {:>5}\t{:>6}\n\
+              {:>5}\t{:>6}\n\
+              {:>5}\t{:>6}\n\
+              {:>5}\t{:>6}\n\
+              {:>5}\t{:>6} (longest request)\n",
+    "50%", pretty[len / 2],
+    "66%", pretty[len * 2 / 3],
+    "75%", pretty[len * 3 / 4],
+    "80%", pretty[len * 4 / 5],
+    "90%", pretty[len * 9 / 10],
+    "95%", pretty[len * 95 / 100],
+    "98%", pretty[len * 49 / 50],
+    "99%", pretty[len * 99 / 100],
+    "100%", pretty[len - 1]);
 }

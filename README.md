@@ -56,7 +56,7 @@ $ dbench --help
   - ~~Req/s (mean)~~ (Done!)
   - ~~Time per request (mean)~~ (Done!)
   - ~~Total time~~ (Done!)
-  - Percentage with time (as `ab`)
+  - ~~Percentage with time (as `ab`)~~ (Done!)
 - ~~Concurrent requests support~~ (Done!)
 
 ## Contribute

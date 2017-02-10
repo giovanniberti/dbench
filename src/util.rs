@@ -36,7 +36,7 @@ pub trait PrettyPrint {
 impl PrettyPrint for Duration {
     fn pretty_print<W: Write>(&self, f: &mut W) -> Result {
 
-        write!(f, "{} ms", to_ms_precise(&self))
+        write!(f, "{:.4} ms", to_ms_precise(&self))
     }
 }
 
