@@ -36,6 +36,28 @@ $ dbench mysql://db_user:db_password@localhost/foo_database -q "select * from ba
 $ dbench --help
 ```
 
+## Example output
+
+```
+$ dbench mysql://me:hunter2@localhost/swagdb -q "select * from referents" -n 100 -j 8
+
+Number of requests: 100
+Latency per request (mean): 0.1507 ms
+Req/ms: 6.635
+Total time: 15.0714 ms
+Percentage of queries computed within a certain time:
+  50%	0.0730 ms
+  66%	0.0758 ms
+  75%	0.0813 ms
+  80%	0.1322 ms
+  90%	0.1559 ms
+  95%	0.2756 ms
+  98%	0.3342 ms
+  99%	5.8745 ms
+ 100%	5.8745 ms (longest request)
+
+```
+
 ## Recognized options and flags
 | Short version | Long version | Accepts parameter |                                Description                              |
 |:-------------:|:------------:|:-----------------:|:------------------------------------------------------------------------|
